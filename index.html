@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="玄関">
+<meta name="referrer" content="no-referrer">
+<title>玄関</title>
+<style>
+/* ===== 基本 ===== */
+:root {
+  --fam: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+  --wc: 200; /* 時計の太さ */
+  --wb: 300; /* 本文の太さ */
+  --ws: 400; /* 強調の太さ */
+}
+.f-zen {
+  --fam: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif;
+  --wc: 300; --wb: 400; --ws: 500;
+}
+.f-shippori {
+  --fam: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --wc: 400; --wb: 400; --ws: 600;
+}
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+  background: #14171c;
+  color: #fff;
+  font-family: var(--fam);
+  font-weight: var(--wb);
+  -webkit-text-size-adjust: 100%;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+body { position: fixed; left: 0; top: 0; right: 0; bottom: 0; }
+.shadow, #left, #weather, #corner, #center {
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+}
+
+/* ===== 写真（2枚重ねてクロスフェード） ===== */
+.photo {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0;
+  transition: opacity 1.5s ease;
+}
+.photo.show { opacity: 1; }
+#shade {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  background:
+    linear-gradient(to bottom left, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0) 40%),
+    linear-gradient(to right, rgba(0,0,0,0.58) 0%, rgba(0,0,0,0.36) 45%, rgba(0,0,0,0) 78%);
+}
+
+/* ===== 左側：時計・日付・予定 ===== */
+#left {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 46%;
+  box-sizing: border-box;
+  padding-left: 44px; padding-top: 20px;
+  padding-top: max(20px, env(safe-area-inset-top, 20px));
+  display: flex; flex-direction: column;
+}
+#clock {
+  flex: none; font-size: 130px; line-height: 1.05;
+  font-weight: var(--wc); letter-spacing: 1px;
+}
+#date {
+  flex: none; font-size: 36px; font-weight: var(--wb);
+  opacity: 0.9; margin-top: 2px; letter-spacing: 2px;
+}
+#events {
+  flex: 1; min-height: 0; overflow: hidden; margin-top: 18px;
+  padding-bottom: 20px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 100px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 100px), transparent 100%);
+}
+.dayhead {
+  font-size: 21px; font-weight: var(--ws); letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 26px 0 12px 0;
+}
+.dayhead:first-child { margin-top: 0; }
+.dayhead.sat { color: rgba(168, 204, 255, 0.95); }
+.dayhead.sun { color: rgba(255, 174, 168, 0.95); }
+.ev { display: flex; align-items: center; margin-bottom: 14px; }
+.ev.past { opacity: 0.45; }
+.bar { flex: none; width: 4px; height: 22px; border-radius: 2px; margin-right: 12px; background: #fff; }
+.time {
+  flex: none; width: 112px; margin-right: 12px; white-space: nowrap;
+  font-size: 16px; font-weight: var(--wb); color: rgba(255, 255, 255, 0.7);
+}
+.title {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 22px; font-weight: var(--wb); color: rgba(255, 255, 255, 0.95);
+}
+.noevent { font-size: 18px; color: rgba(255, 255, 255, 0.6); margin-left: 16px; }
+
+/* ===== 右上：天気 ===== */
+#weather {
+  position: absolute; right: 40px; top: 20px; width: 280px; text-align: right;
+  top: max(20px, env(safe-area-inset-top, 20px));
+}
+#wnow { display: flex; align-items: center; justify-content: flex-end; }
+#wnow svg { margin-right: 12px; }
+#wtemp { font-size: 64px; line-height: 1; font-weight: var(--wc); }
+#wtext { font-size: 18px; margin-top: 6px; opacity: 0.85; letter-spacing: 2px; }
+#wdays { width: 250px; margin-left: auto; margin-top: 18px; }
+.wd { display: flex; align-items: center; height: 44px; margin-bottom: 9px; }
+.wd .dn { flex: none; width: 62px; text-align: left; font-size: 18px; opacity: 0.85; }
+.wd svg { flex: none; display: block; margin: 0 14px; }
+.wd .hi { flex: none; width: 52px; text-align: right; font-size: 24px; font-weight: var(--ws); }
+.wd .lo { flex: none; width: 50px; text-align: right; font-size: 19px; opacity: 0.6; }
+#wcredit { font-size: 12px; opacity: 0.5; margin-top: 6px; }
+svg.icon { stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ===== 右下の小さな表示 ===== */
+#corner {
+  position: absolute; right: 16px; bottom: 12px; text-align: right;
+  font-size: 12px; color: rgba(255, 255, 255, 0.6); max-width: 440px;
+}
+
+/* ===== 画面中央の案内・合言葉入力 ===== */
+#center {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(10, 12, 16, 0.78); text-align: center;
+}
+#center .box { max-width: 560px; padding: 0 32px; }
+#center .msg { font-size: 24px; line-height: 1.7; }
+#center .hint { font-size: 15px; line-height: 1.7; margin-top: 18px; color: rgba(255,255,255,0.65); }
+#center input {
+  -webkit-user-select: text; user-select: text;
+  font-size: 22px; padding: 10px 16px; width: 300px; margin-top: 24px;
+  border: 1px solid rgba(255,255,255,0.5); border-radius: 8px;
+  background: rgba(255,255,255,0.1); color: #fff; font-family: var(--fam);
+  text-align: center; outline: none;
+}
+#center button {
+  font-size: 20px; padding: 10px 28px; margin-top: 16px; margin-left: 10px;
+  border: 1px solid rgba(255,255,255,0.7); border-radius: 8px;
+  background: rgba(255,255,255,0.18); color: #fff; font-family: var(--fam);
+}
+
+/* ===== 縦向きの簡易対応 ===== */
+@media (orientation: portrait) {
+  #left { width: 100%; padding-right: 32px; }
+  #clock { font-size: 100px; }
+  #weather { right: 32px; }
+  #events { margin-top: 200px; }
+}
+</style>
+</head>
+<body>
+<img id="photoA" class="photo" alt="">
+<img id="photoB" class="photo" alt="">
+<div id="shade"></div>
+
+<div id="left">
+  <div id="clock"></div>
+  <div id="date"></div>
+  <div id="events"></div>
+</div>
+
+<div id="weather">
+  <div id="wnow"><span id="wicon"></span><span id="wtemp"></span></div>
+  <div id="wtext"></div>
+  <div id="wdays"></div>
+  <div id="wcredit">天気: Open-Meteo</div>
+</div>
+
+<div id="corner"><div id="status"></div><div id="demoBadge"></div></div>
+<div id="center"><div class="box" id="centerBox"></div></div>
+
+<script>
+// ============================================================
+// ここだけ書き換える：Apps Script のウェブアプリURL（末尾が /exec のもの）
+// ============================================================
+var API_URL = 'https://script.google.com/macros/s/AKfycbwAjNW1MNXAcIQqecIV1QOYlgwdJotxX0wsNFkuHDyuSk6fgrQv96vuuezRkYjA9ymN/exec';
+// ============================================================
+// これより下は、基本的に触らなくて大丈夫です。
+// ============================================================
+
+var WEEK = ['日', '月', '火', '水', '木', '金', '土'];
+var FONTS = {
+  'Noto Sans JP':    { cls: 'f-noto',    q: 'Noto+Sans+JP:wght@200;300;400' },
+  'Zen Maru Gothic': { cls: 'f-zen',     q: 'Zen+Maru+Gothic:wght@300;400;500' },
+  'Shippori Mincho': { cls: 'f-shippori', q: 'Shippori+Mincho:wght@400;500;600' }
+};
+var FONT_PARAM = { noto: 'Noto Sans JP', zenmaru: 'Zen Maru Gothic', shippori: 'Shippori Mincho' };
+
+var state = {
+  errText: '',         // 通信エラーの小さな表示
+  data: null,          // 最新の予定データ（data API の応答）
+  lastOkMs: 0,         // 最後に更新できた時刻
+  weatherCfg: null,    // {lat, lon}
+  weather: null,
+  photoIds: [],
+  fontName: '',
+  fontLocked: false,   // ?font= で指定されたら true（データ側のfontで上書きしない）
+  demo: false,
+  key: '',
+  loadedDate: ''       // 読み込んだ日（深夜の再読み込み判定用）
+};
+
+function $(id) { return document.getElementById(id); }
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+function ymd(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function hm(d) { return d.getHours() + ':' + pad2(d.getMinutes()); }
+function clearNode(n) { while (n.firstChild) { n.removeChild(n.firstChild); } }
+
+// ---------- localStorage（失敗しても止まらないように try/catch） ----------
+function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { window.localStorage.setItem(k, v); } catch (e) { /* 保存できなくても続行 */ } }
+
+// ---------- URL のパラメータを読む ----------
+function getParam(name) {
+  var m = location.search.replace(/^\?/, '').split('&');
+  for (var i = 0; i < m.length; i++) {
+    var kv = m[i].split('=');
+    if (decodeURIComponent(kv[0]) === name) {
+      return decodeURIComponent((kv[1] || '').replace(/\+/g, ' '));
+    }
+  }
+  return '';
+}
+
+// ---------- フォント ----------
+function applyFont(name) {
+  if (!FONTS[name]) { name = 'Noto Sans JP'; }
+  if (state.fontName === name) { return; }
+  state.fontName = name;
+  var root = document.documentElement;
+  root.className = FONTS[name].cls;
+  var id = 'gf-' + FONTS[name].cls;
+  if (!$(id)) {
+    var link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=' + FONTS[name].q + '&display=swap';
+    document.head.appendChild(link);
+  }
+}
+
+// ---------- 画面中央の案内 ----------
+function showCenter(msg, opts) {
+  opts = opts || {};
+  var box = $('centerBox');
+  clearNode(box);
+  var p = document.createElement('div');
+  p.className = 'msg';
+  p.textContent = msg;
+  box.appendChild(p);
+  if (opts.input) {
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = '合言葉';
+    inp.setAttribute('autocapitalize', 'off');
+    inp.setAttribute('autocorrect', 'off');
+    inp.setAttribute('autocomplete', 'off');
+    inp.id = 'keyInput';
+    var btn = document.createElement('button');
+    btn.textContent = '表示する';
+    var go = function () {
+      var v = inp.value.replace(/^\s+|\s+$/g, '');
+      if (!v) { return; }
+      var url = location.pathname + '?key=' + encodeURIComponent(v);
+      var f = getParam('font');
+      if (f) { url += '&font=' + encodeURIComponent(f); }
+      location.href = url;
+    };
+    btn.addEventListener('click', go);
+    inp.addEventListener('keydown', function (e) { if (e.keyCode === 13) { go(); } });
+    box.appendChild(inp);
+    box.appendChild(btn);
+  }
+  if (opts.hint) {
+    var h = document.createElement('div');
+    h.className = 'hint';
+    h.textContent = opts.hint;
+    box.appendChild(h);
+  }
+  $('center').style.display = 'flex';
+}
+function hideCenter() { $('center').style.display = 'none'; }
+
+// ---------- 右下の小さな表示 ----------
+// 右下の状態表示：通信エラー（1行）と Apps Script からの警告（最大3行）を並べる
+function updateStatus() {
+  var box = $('status');
+  clearNode(box);
+  var lines = [];
+  if (state.errText) { lines.push(state.errText); }
+  if (!state.demo) {
+    var w = (state.data && state.data.warnings) || [];
+    for (var i = 0; i < w.length && i < 3; i++) {
+      if (typeof w[i] === 'string' && w[i]) { lines.push('⚠ ' + w[i]); }
+    }
+  }
+  for (var k = 0; k < lines.length; k++) {
+    var d = document.createElement('div');
+    d.textContent = lines[k];
+    box.appendChild(d);
+  }
+}
+
+// ============================================================
+// 天気アイコン（白い線画SVG。線幅は共通）
+// ============================================================
+var SVGNS = 'http://www.w3.org/2000/svg';
+var CLOUD = 'M14 36h20a8 8 0 0 0 1.2-15.9A11 11 0 0 0 14 22a7 7 0 0 0 0 14z';
+var ICON_PARTS = {
+  sun: [['circle', { cx: 24, cy: 24, r: 8 }],
+    ['path', { d: 'M24 6v5M24 37v5M6 24h5M37 24h5M11.3 11.3l3.5 3.5M33.2 33.2l3.5 3.5M11.3 36.7l3.5-3.5M33.2 14.8l3.5-3.5' }]],
+  moon: [['path', { d: 'M31 8a16 16 0 1 0 10 23A13 13 0 0 1 31 8z' }]],
+  partly: [['circle', { cx: 17, cy: 16, r: 6 }],
+    ['path', { d: 'M17 4v3M5 16h3M8.5 7.5l2 2M25.5 7.5l-2 2' }],
+    ['path', { d: CLOUD, transform: 'translate(3 3)' }]],
+  cloud: [['path', { d: CLOUD }]],
+  fog: [['path', { d: 'M10 14h28M6 22h30M12 30h28M8 38h24' }]],
+  rain: [['path', { d: CLOUD, transform: 'translate(0 -7)' }],
+    ['path', { d: 'M16 35l-3 7M25 35l-3 7M34 35l-3 7' }]],
+  snow: [['path', { d: CLOUD, transform: 'translate(0 -7)' }],
+    ['circle', { cx: 16, cy: 38, r: 1.6 }], ['circle', { cx: 25, cy: 41, r: 1.6 }], ['circle', { cx: 34, cy: 38, r: 1.6 }]],
+  thunder: [['path', { d: CLOUD, transform: 'translate(0 -7)' }],
+    ['path', { d: 'M26 31l-6 8h7l-4 7' }]]
+};
+function makeIcon(kind, size) {
+  var svg = document.createElementNS(SVGNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 48 48');
+  svg.setAttribute('width', size);
+  svg.setAttribute('height', size);
+  svg.setAttribute('class', 'icon');
+  var parts = ICON_PARTS[kind] || ICON_PARTS.cloud;
+  for (var i = 0; i < parts.length; i++) {
+    var el = document.createElementNS(SVGNS, parts[i][0]);
+    var attrs = parts[i][1];
+    for (var k in attrs) {
+      if (Object.prototype.hasOwnProperty.call(attrs, k)) { el.setAttribute(k, attrs[k]); }
+    }
+    svg.appendChild(el);
+  }
+  return svg;
+}
+
+// 天気コード（WMO）→ 日本語とアイコン
+function weatherInfo(code, isDay) {
+  var day = (isDay !== 0);
+  if (code === 0) { return { t: '快晴', i: day ? 'sun' : 'moon' }; }
+  if (code === 1) { return { t: '晴れ', i: day ? 'sun' : 'moon' }; }
+  if (code === 2) { return { t: '晴れ時々くもり', i: 'partly' }; }
+  if (code === 3) { return { t: 'くもり', i: 'cloud' }; }
+  if (code === 45 || code === 48) { return { t: '霧', i: 'fog' }; }
+  if (code >= 51 && code <= 55) { return { t: '霧雨', i: 'rain' }; }
+  if (code === 56 || code === 57) { return { t: '着氷性の霧雨', i: 'rain' }; }
+  if (code === 61) { return { t: '弱い雨', i: 'rain' }; }
+  if (code === 63) { return { t: '雨', i: 'rain' }; }
+  if (code === 65) { return { t: '強い雨', i: 'rain' }; }
+  if (code === 66 || code === 67) { return { t: '着氷性の雨', i: 'rain' }; }
+  if (code === 71) { return { t: '弱い雪', i: 'snow' }; }
+  if (code === 73) { return { t: '雪', i: 'snow' }; }
+  if (code === 75) { return { t: '強い雪', i: 'snow' }; }
+  if (code === 77) { return { t: '霧雪', i: 'snow' }; }
+  if (code >= 80 && code <= 82) { return { t: 'にわか雨', i: 'rain' }; }
+  if (code === 85 || code === 86) { return { t: 'にわか雪', i: 'snow' }; }
+  if (code === 95) { return { t: '雷雨', i: 'thunder' }; }
+  if (code === 96 || code === 99) { return { t: 'ひょうを伴う雷雨', i: 'thunder' }; }
+  return { t: '', i: 'cloud' };
+}
+
+// 天気の表示。w = { temp, code, isDay, days:[{label, code, max, min}] }
+function renderWeather(w) {
+  if (!w) { return; }
+  var info = weatherInfo(w.code, w.isDay);
+  var wi = $('wicon');
+  clearNode(wi);
+  wi.appendChild(makeIcon(info.i, 60));
+  $('wtemp').textContent = Math.round(w.temp) + '°';
+  $('wtext').textContent = info.t;
+  var box = $('wdays');
+  clearNode(box);
+  for (var i = 0; i < w.days.length; i++) {
+    var d = w.days[i];
+    var col = document.createElement('div');
+    col.className = 'wd';
+    var dn = document.createElement('div'); dn.className = 'dn'; dn.textContent = d.label;
+    var hi = document.createElement('div'); hi.className = 'hi'; hi.textContent = Math.round(d.max) + '°';
+    var lo = document.createElement('div'); lo.className = 'lo'; lo.textContent = Math.round(d.min) + '°';
+    col.appendChild(dn);
+    col.appendChild(makeIcon(weatherInfo(d.code, 1).i, 32));
+    col.appendChild(hi);
+    col.appendChild(lo);
+    box.appendChild(col);
+  }
+}
+
+// Open-Meteo の応答 → 表示用データ
+function parseWeather(j) {
+  var days = [];
+  var t = j.daily.time;
+  for (var i = 0; i < t.length && i < 4; i++) {
+    var label;
+    if (i === 0) { label = '今日'; }
+    else if (i === 1) { label = '明日'; }
+    else {
+      var p = t[i].split('-');
+      label = WEEK[new Date(+p[0], +p[1] - 1, +p[2]).getDay()];
+    }
+    days.push({ label: label, code: j.daily.weather_code[i], max: j.daily.temperature_2m_max[i], min: j.daily.temperature_2m_min[i] });
+  }
+  return { temp: j.current.temperature_2m, code: j.current.weather_code, isDay: j.current.is_day, days: days };
+}
+
+// 天気を取りに行く（30分ごと。失敗したら前回の表示のまま）
+function loadWeather() {
+  if (state.demo || !state.weatherCfg) { return; }
+  var c = state.weatherCfg;
+  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(c.lat) +
+    '&longitude=' + encodeURIComponent(c.lon) +
+    '&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo&forecast_days=4';
+  fetchJson(url, 20000).then(function (j) {
+    state.weather = parseWeather(j);
+    renderWeather(state.weather);
+  }).catch(function () { /* 失敗しても前回の天気を表示し続ける */ });
+}
+
+// ============================================================
+// 通信
+// ============================================================
+function mkErr(code, message) { var e = new Error(message || code); e.code = code; return e; }
+
+// 通常の通信（fetch）。タイムアウト付き。
+// 失敗は e.code に 'network'（届かない・時間切れ）/ 'notjson'（JSONでない）を入れて返す
+function fetchJson(url, ms) {
+  return new Promise(function (resolve, reject) {
+    var done = false;
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = setTimeout(function () {
+      if (done) { return; }
+      done = true;
+      if (ctrl) { ctrl.abort(); }
+      reject(mkErr('network'));
+    }, ms);
+    var opts = ctrl ? { signal: ctrl.signal } : {};
+    fetch(url, opts).then(function (r) { return r.text(); }).then(function (txt) {
+      if (done) { return; }
+      done = true; clearTimeout(timer);
+      var j;
+      try { j = JSON.parse(txt); } catch (e) { reject(mkErr('notjson')); return; }
+      resolve(j);
+    }).catch(function () {
+      if (done) { return; }
+      done = true; clearTimeout(timer);
+      reject(mkErr('network'));
+    });
+  });
+}
+
+// 予備の通信（JSONP）：script タグで読み込む。Apps Script に &callback=名前 を付けると
+// 「名前({...});」が返ってくる仕組みを使う
+var jsonpCounter = 0;
+function jsonpGet(url, ms) {
+  return new Promise(function (resolve, reject) {
+    jsonpCounter++;
+    var name = 'genkanCb' + jsonpCounter + '_' + Date.now();
+    var script = document.createElement('script');
+    var done = false;
+    var timer = null;
+    function finish() {
+      done = true;
+      clearTimeout(timer);
+      window[name] = function () { /* 遅れて呼ばれても何もしない */ };
+      script.onerror = null;
+      if (script.parentNode) { script.parentNode.removeChild(script); }
+      setTimeout(function () {
+        try { delete window[name]; } catch (e) { window[name] = undefined; }
+      }, 120000);
+    }
+    window[name] = function (j) {
+      if (done) { return; }
+      finish();
+      resolve(j);
+    };
+    script.onerror = function () {
+      if (done) { return; }
+      finish();
+      reject(mkErr('network'));
+    };
+    timer = setTimeout(function () {
+      if (done) { return; }
+      finish();
+      reject(mkErr('network'));
+    }, ms);
+    script.src = url + '&callback=' + name;
+    document.head.appendChild(script);
+  });
+}
+
+// Apps Script への問い合わせはすべてここを通る。
+// ①fetch → ②だめなら JSONP。JSONP で成功したら、この表示中は以後 JSONP を使う
+var useJsonp = false;
+function apiGet(action, extra, ms) {
+  var url = apiUrl(action, extra);
+  if (useJsonp) {
+    return jsonpGet(url, ms).catch(function () { throw mkErr('notjson'); });
+  }
+  return fetchJson(url, ms).catch(function (e) {
+    if (e.code !== 'network') { throw e; }                     // JSONでない → 接続案内
+    if (navigator.onLine === false) { throw e; }               // 回線が無い
+    return jsonpGet(url, ms).then(function (j) {
+      useJsonp = true;
+      return j;
+    }, function () { throw mkErr('notjson'); });               // 両方だめ → 接続案内
+  });
+}
+
+function apiUrl(action, extra) {
+  return API_URL + '?action=' + action + '&key=' + encodeURIComponent(state.key) + (extra || '');
+}
+
+// ============================================================
+// 予定リスト
+// ============================================================
+function dayHeadText(dateStr, todayStr, tomorrowStr) {
+  var p = dateStr.split('-');
+  var d = new Date(+p[0], +p[1] - 1, +p[2]);
+  var base = (+p[1]) + '/' + (+p[2]) + '（' + WEEK[d.getDay()] + '）';
+  if (dateStr === todayStr) { return '今日 ' + base; }
+  if (dateStr === tomorrowStr) { return '明日 ' + base; }
+  return base;
+}
+
+function renderEvents() {
+  var box = $('events');
+  clearNode(box);
+  var data = state.data;
+  var now = new Date();
+  var todayStr = ymd(now);
+  var tm = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  var tomorrowStr = ymd(tm);
+  var days = [];
+  var hasToday = false;
+  if (data && data.days) {
+    for (var i = 0; i < data.days.length; i++) {
+      if (data.days[i].date < todayStr) { continue; } // 昨日以前は出さない
+      if (data.days[i].date === todayStr) { hasToday = true; }
+      days.push(data.days[i]);
+    }
+  }
+  if (!hasToday) { days.unshift({ date: todayStr, events: [] }); }
+  var nowMs = now.getTime();
+  for (var di = 0; di < days.length; di++) {
+    var day = days[di];
+    var isToday = (day.date === todayStr);
+    var evs = day.events || [];
+    if (!isToday && evs.length === 0) { continue; } // 予定0件の日は今日以外出さない
+    var p = day.date.split('-');
+    var wd = new Date(+p[0], +p[1] - 1, +p[2]).getDay();
+    var head = document.createElement('div');
+    head.className = 'dayhead' + (wd === 6 ? ' sat' : (wd === 0 ? ' sun' : ''));
+    head.textContent = dayHeadText(day.date, todayStr, tomorrowStr);
+    box.appendChild(head);
+    if (evs.length === 0) {
+      var none = document.createElement('div');
+      none.className = 'noevent';
+      none.textContent = '予定はありません';
+      box.appendChild(none);
+      continue;
+    }
+    for (var ei = 0; ei < evs.length; ei++) {
+      var ev = evs[ei];
+      var row = document.createElement('div');
+      var past = isToday && !ev.allDay && ev.endMs && ev.endMs < nowMs;
+      row.className = 'ev' + (past ? ' past' : '');
+      var bar = document.createElement('span');
+      bar.className = 'bar';
+      bar.style.background = /^#[0-9a-fA-F]{3,8}$/.test(ev.color || '') ? ev.color : '#ffffff';
+      var time = document.createElement('span');
+      time.className = 'time';
+      time.textContent = ev.timeLabel || '';
+      var title = document.createElement('span');
+      title.className = 'title';
+      title.textContent = ev.title || '';
+      row.appendChild(bar);
+      row.appendChild(time);
+      row.appendChild(title);
+      box.appendChild(row);
+    }
+  }
+}
+
+// ============================================================
+// 時計（毎秒チェック。文字が変わったときだけ書き換える）
+// ============================================================
+var lastClock = '', lastDate = '', lastMinuteKey = '';
+function tick() {
+  var now = new Date();
+  var c = now.getHours() + ':' + pad2(now.getMinutes());
+  if (c !== lastClock) { lastClock = c; $('clock').textContent = c; }
+  var d = (now.getMonth() + 1) + '月' + now.getDate() + '日 ' + WEEK[now.getDay()] + '曜日';
+  if (d !== lastDate) { lastDate = d; $('date').textContent = d; }
+  var mk = ymd(now) + ' ' + c;
+  if (mk !== lastMinuteKey) {
+    lastMinuteKey = mk;
+    renderEvents();   // 終わった予定を薄くする・日付またぎの更新
+    checkNightReload(now);
+  }
+}
+
+// 深夜の再読み込み：「読み込んだ日と日付が変わり、かつ3時を過ぎた」なら1回だけ再読み込み
+function checkNightReload(now) {
+  if (ymd(now) !== state.loadedDate && now.getHours() >= 3) {
+    location.reload();
+  }
+}
+
+// ============================================================
+// 予定データの取得・保存
+// ============================================================
+function handleData(j, fromCache) {
+  state.data = j;
+  if (j.config) {
+    if (!state.fontLocked && j.config.font) { applyFont(j.config.font); }
+    state.weatherCfg = { lat: j.config.latitude, lon: j.config.longitude };
+  }
+  setPhotoIds(j.photoIds || []);
+  renderEvents();
+  updateStatus();
+  if (!fromCache) { loadWeatherIfNeeded(); }
+}
+var weatherStarted = false;
+function loadWeatherIfNeeded() {
+  if (!weatherStarted && state.weatherCfg) {
+    weatherStarted = true;
+    loadWeather();
+    setInterval(loadWeather, 30 * 60 * 1000);
+  }
+}
+
+function errorMessage(e, j) {
+  var code = e ? e.code : (j && j.error);
+  if (code === 'key-not-set') { return 'Apps Script の CONFIG.SECRET_KEY が設定されていません'; }
+  if (code === 'bad-key') { return '合言葉が違います。URL の key= と Code.gs の SECRET_KEY を確認してください'; }
+  if (code === 'notjson') { return 'Apps Script に接続できません。デプロイの「アクセスできるユーザー」が「全員」か、API_URL が /exec で終わっているか確認してください'; }
+  if (code === 'network') { return 'インターネットに接続できません'; }
+  return (j && j.message) || '不明なエラーです';
+}
+
+function showDataError(code, msg) {
+  if (code === 'bad-key') {
+    showCenter(msg, { input: true });
+  } else if (!state.data) {
+    showCenter(msg);
+  } else {
+    var t = state.lastOkMs ? hm(new Date(state.lastOkMs)) : '';
+    state.errText = '⚠ 予定を更新できません' + (t ? '（' + t + '時点）' : '');
+    updateStatus();
+  }
+}
+
+function loadData() {
+  return apiGet('data', '', 30000).then(function (j) {
+    if (!j || j.ok !== true) {
+      showDataError(j && j.error, errorMessage(null, j));
+      return;
+    }
+    state.lastOkMs = Date.now();
+    lsSet('genkan.data', JSON.stringify({ t: state.lastOkMs, d: j }));
+    hideCenter();
+    state.errText = '';
+    handleData(j, false);
+  }).catch(function (e) {
+    showDataError(e.code || 'network', errorMessage(e));
+  });
+}
+
+// ============================================================
+// 写真
+// ============================================================
+var photoEls = [$('photoA'), $('photoB')];
+var photoFront = -1;       // いま見えている img の番号
+var photoQueue = [];
+var photoLastId = '';
+var photoStarted = false;
+var photoFail = 0;
+var photoTimer = null;
+var DEMO_PHOTOS = {};
+
+function shuffle(a) {
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+function setPhotoIds(ids) {
+  if (ids.join(',') === state.photoIds.join(',')) { return; }
+  state.photoIds = ids.slice();
+  photoQueue = [];
+  if (!photoStarted && ids.length > 0) { photoStarted = true; photoNext(); }
+}
+function pickPhotoId() {
+  if (photoQueue.length === 0) {
+    photoQueue = shuffle(state.photoIds.slice());
+    // 直前と同じ写真が続かないように
+    if (photoQueue.length > 1 && photoQueue[photoQueue.length - 1] === photoLastId) {
+      var t = photoQueue[0]; photoQueue[0] = photoQueue[photoQueue.length - 1]; photoQueue[photoQueue.length - 1] = t;
+    }
+  }
+  return photoQueue.pop();
+}
+function photoIntervalMs() {
+  var s = (state.data && state.data.config && state.data.config.photoIntervalSec) || 30;
+  return Math.max(5, s) * 1000;
+}
+function schedulePhoto(ms) {
+  if (photoTimer) { clearTimeout(photoTimer); }
+  photoTimer = setTimeout(photoNext, ms);
+}
+function fetchPhotoDataUrl(id) {
+  if (state.demo) { return Promise.resolve(DEMO_PHOTOS[id]); }
+  return apiGet('photo', '&id=' + encodeURIComponent(id), 60000).then(function (j) {
+    if (!j || j.ok !== true || !j.data) { throw mkErr('photo'); }
+    return 'data:' + j.mime + ';base64,' + j.data;
+  });
+}
+function photoNext() {
+  var ids = state.photoIds;
+  if (!ids.length) { schedulePhoto(photoIntervalMs()); return; }
+  var id = pickPhotoId();
+  fetchPhotoDataUrl(id).then(function (url) {
+    return new Promise(function (resolve, reject) {
+      var nextIdx = photoFront === 0 ? 1 : 0;
+      var el = photoEls[nextIdx];
+      el.onload = function () { el.onload = null; el.onerror = null; resolve(nextIdx); };
+      el.onerror = function () { el.onload = null; el.onerror = null; reject(mkErr('photo')); };
+      el.src = url;
+    });
+  }).then(function (nextIdx) {
+    // 読み込めたので切り替える（1.5秒のフェード）
+    var old = photoFront >= 0 ? photoEls[photoFront] : null;
+    photoEls[nextIdx].classList.add('show');
+    if (old) {
+      old.classList.remove('show');
+      setTimeout(function () { old.removeAttribute('src'); }, 1700); // 古い画像を手放す
+    }
+    photoFront = nextIdx;
+    photoLastId = id;
+    photoFail = 0;
+    schedulePhoto(photoIntervalMs());
+  }).catch(function () {
+    // 失敗：今の写真は出したまま次の写真へ。全部だめなら通常の間隔まで待つ
+    photoFail++;
+    schedulePhoto(photoFail >= Math.max(1, ids.length) ? photoIntervalMs() : 1500);
+    if (photoFail >= Math.max(1, ids.length)) { photoFail = 0; }
+  });
+}
+
+// ============================================================
+// デモ表示（?demo=1）：外部へは一切通信しない
+// ============================================================
+function makeDemoPhotos() {
+  var sets = [['#2b4a6f', '#e0a96d'], ['#27463a', '#b9c98a'], ['#4a2f5a', '#e8907a'], ['#1f3b4d', '#7fb7be']];
+  var ids = [];
+  for (var i = 0; i < sets.length; i++) {
+    var cv = document.createElement('canvas');
+    cv.width = 800; cv.height = 600;
+    var ctx = cv.getContext('2d');
+    var g = ctx.createLinearGradient(0, 0, 800, 600);
+    g.addColorStop(0, sets[i][0]); g.addColorStop(1, sets[i][1]);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 800, 600);
+    var g2 = ctx.createRadialGradient(560, 180, 10, 560, 180, 320);
+    g2.addColorStop(0, 'rgba(255,255,255,0.45)'); g2.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g2; ctx.fillRect(0, 0, 800, 600);
+    var id = 'demo' + i;
+    DEMO_PHOTOS[id] = cv.toDataURL('image/jpeg', 0.85);
+    ids.push(id);
+  }
+  return ids;
+}
+function makeDemoData() {
+  var now = new Date();
+  var C = { blue: '#9fc6e7', yellow: '#f6bf26', green: '#51b749', red: '#ff887c', purple: '#b99aff' };
+  var base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  function dayAt(n, h, m) { return new Date(base.getFullYear(), base.getMonth(), base.getDate() + n, h, m).getTime(); }
+  function label(a, b) { return hm(new Date(a)) + '〜' + hm(new Date(b)); }
+  function ev(title, color, s, e, allDay, tl) {
+    return { title: title, allDay: !!allDay, timeLabel: allDay ? '終日' : (tl || label(s, e)), color: color, startMs: s, endMs: e };
+  }
+  var days = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
+    days.push({ date: ymd(d), events: [] });
+  }
+  days[0].events = [
+    ev('燃えるゴミ', C.blue, dayAt(0, 0, 0), dayAt(1, 0, 0), true),
+    ev('朝のジョギング', C.green, dayAt(0, 7, 0), dayAt(0, 7, 30)),
+    ev('歯医者', C.yellow, dayAt(0, 10, 0), dayAt(0, 11, 0)),
+    ev('取引先との打ち合わせ（駅前のカフェで資料の最終確認と今後の進め方）', C.purple, dayAt(0, 15, 0), dayAt(0, 16, 30)),
+    ev('家族で夕食', C.red, dayAt(0, 19, 30), dayAt(0, 21, 0))
+  ];
+  days[1].events = [
+    ev('資源ゴミ', C.blue, dayAt(1, 0, 0), dayAt(2, 0, 0), true),
+    ev('家族でお出かけ', C.red, dayAt(1, 10, 0), dayAt(1, 17, 30)),
+    ev('ピアノの練習', C.green, dayAt(1, 19, 0), dayAt(1, 19, 0), false, '19:00')
+  ];
+  days[2].events = [
+    ev('出張（大阪）', C.purple, dayAt(2, 18, 0), dayAt(4, 12, 0), false, '18:00〜')
+  ];
+  days[3].events = [
+    ev('出張（大阪）', C.purple, dayAt(2, 18, 0), dayAt(4, 12, 0), false, '終日'),
+    ev('誕生日会の準備', C.red, dayAt(3, 13, 0), dayAt(3, 15, 0))
+  ];
+  days[4].events = [
+    ev('出張（大阪）', C.purple, dayAt(2, 18, 0), dayAt(4, 12, 0), false, '〜12:00'),
+    ev('美容院', C.yellow, dayAt(4, 15, 0), dayAt(4, 16, 30))
+  ];
+  days[5].events = [];
+  days[6].events = [
+    ev('保護者会', C.green, dayAt(6, 9, 30), dayAt(6, 11, 0)),
+    ev('買い物', C.blue, dayAt(6, 14, 0), dayAt(6, 16, 0))
+  ];
+  return {
+    ok: true,
+    config: { font: 'Noto Sans JP', photoIntervalSec: 30, daysToShow: 7, latitude: 35.68, longitude: 139.76 },
+    days: days, photoIds: makeDemoPhotos(), warnings: [], updatedAt: now.toISOString()
+  };
+}
+function makeDemoWeather() {
+  return { temp: 18.4, code: 2, isDay: 1, days: [
+    { label: '今日', code: 2, max: 21, min: 14 },
+    { label: '明日', code: 63, max: 19, min: 13 },
+    { label: '月', code: 3, max: 20, min: 12 },
+    { label: '火', code: 0, max: 23, min: 11 }
+  ] };
+}
+
+// ============================================================
+// 起動
+// ============================================================
+function init() {
+  state.loadedDate = ymd(new Date());
+  document.documentElement.className = 'f-noto';
+  var fp = FONT_PARAM[getParam('font')];
+  if (fp) { state.fontLocked = true; }
+  applyFont(fp || 'Noto Sans JP');
+  tick();
+  setInterval(tick, 1000);
+
+  // 2. デモ表示
+  if (getParam('demo') === '1') {
+    state.demo = true;
+    $('demoBadge').textContent = 'デモ表示';
+    state.data = makeDemoData();
+    state.photoIds = [];
+    renderWeather(makeDemoWeather());
+    handleData(state.data, true);
+    return;
+  }
+
+  // 4. API_URL が初期値のまま
+  if (API_URL.indexOf('/exec') < 0 && API_URL.indexOf('script.google.com') < 0) {
+    showCenter('index.html の API_URL を設定してください');
+    return;
+  }
+
+  // 1. 合言葉（URL → localStorage の順）
+  var key = getParam('key');
+  if (key) { lsSet('genkan.key', key); } else { key = lsGet('genkan.key') || ''; }
+  state.key = key;
+
+  // 5. 合言葉が無い
+  if (!key) {
+    showCenter('合言葉を入力してください', {
+      input: true,
+      hint: (navigator.standalone === true)
+        ? 'ホーム画面から開いたときは、最初の1回だけ合言葉の入力が必要です'
+        : '表示されたら、Safari の共有ボタン →「ホーム画面に追加」'
+    });
+    return;
+  }
+
+  // 6. 通常：前回のデータがあれば先に描画 → data API → 天気 → 写真
+  var cached = lsGet('genkan.data');
+  if (cached) {
+    try {
+      var c = JSON.parse(cached);
+      if (c && c.d && c.d.ok) {
+        state.lastOkMs = c.t || 0;
+        handleData(c.d, false);
+      }
+    } catch (e) { /* 壊れた保存データは無視 */ }
+  }
+  loadData();
+  setInterval(loadData, 5 * 60 * 1000);
+}
+init();
+</script>
+</body>
+</html>
