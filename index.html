@@ -46,7 +46,7 @@
   --wc: 700; --wb: 400; --ws: 700;
 }
 html, body {
-  margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+  margin: 0; padding: 0; width: 100%; height: 100%; height: var(--fullh, 100%); overflow: hidden;
   background: #14171c;
   color: #fff;
   font-family: var(--fam);
@@ -57,7 +57,8 @@ html, body {
   -webkit-touch-callout: none;
   touch-action: manipulation;
 }
-body { position: fixed; left: 0; top: 0; right: 0; bottom: 0; }
+/* 高さは --fullh（画面全体の高さ）。写真・左の列・右下の表示などは body を基準に広がるので、下の黒い帯が出ない */
+body { position: fixed; left: 0; top: 0; right: 0; height: var(--fullh, 100%); }
 .shadow, #left, #weather, #corner, #center {
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
 }
@@ -78,19 +79,15 @@ body { position: fixed; left: 0; top: 0; right: 0; bottom: 0; }
 
 /* ===== 左側：時計・日付・予定 ===== */
 #left {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 46%;
+  position: absolute; left: 0; top: 0; height: var(--fullh, 100%); width: 48%;
   box-sizing: border-box;
   padding-left: 44px; padding-top: 20px;
   padding-top: max(20px, env(safe-area-inset-top, 20px));
   display: flex; flex-direction: column;
 }
 #clock {
-  flex: none; font-size: 130px; line-height: 1.05;
+  flex: none; font-size: 137px; line-height: 1.05;
   font-weight: var(--wc); letter-spacing: 1px;
-}
-#date {
-  flex: none; font-size: 36px; font-weight: var(--wb);
-  opacity: 0.9; margin-top: 2px; letter-spacing: 2px;
 }
 #events {
   flex: 1; min-height: 0; overflow: hidden; margin-top: 18px;
@@ -99,53 +96,53 @@ body { position: fixed; left: 0; top: 0; right: 0; bottom: 0; }
   mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 100px), transparent 100%);
 }
 .dayhead {
-  font-size: 21px; font-weight: var(--ws); letter-spacing: 2px;
+  font-size: 23px; font-weight: var(--ws); letter-spacing: 2px;
   color: rgba(255, 255, 255, 0.85);
   margin: 26px 0 12px 0;
 }
 .dayhead:first-child { margin-top: 0; }
 .dayhead.sat { color: rgba(168, 204, 255, 0.95); }
 .dayhead.sun { color: rgba(255, 174, 168, 0.95); }
-.ev { display: flex; align-items: center; margin-bottom: 14px; }
+.ev { display: flex; align-items: center; margin-bottom: 15px; }
 .ev.past { opacity: 0.45; }
-.bar { flex: none; width: 4px; height: 22px; border-radius: 2px; margin-right: 12px; background: #fff; }
+.bar { flex: none; width: 4px; height: 23px; border-radius: 2px; margin-right: 12px; background: #fff; }
 .time {
-  flex: none; width: 112px; margin-right: 12px; white-space: nowrap;
-  font-size: 16px; font-weight: var(--wb); color: rgba(255, 255, 255, 0.7);
+  flex: none; width: 121px; margin-right: 12px; white-space: nowrap;
+  font-size: 17px; font-weight: var(--wb); color: rgba(255, 255, 255, 0.7);
 }
 .title {
   flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  font-size: 22px; font-weight: var(--wb); color: rgba(255, 255, 255, 0.95);
+  font-size: 24px; font-weight: var(--wb); color: rgba(255, 255, 255, 0.95);
 }
 .noevent { font-size: 18px; color: rgba(255, 255, 255, 0.6); margin-left: 16px; }
 /* 今日の欄だけ大きくする */
-.dayhead.today { font-size: 24px; }
-.ev.today { margin-bottom: 18px; }
-.ev.today .bar { height: 28px; }
-.ev.today .time { width: 140px; font-size: 19px; }
-.ev.today .title { font-size: 28px; }
-.noevent.today { font-size: 22px; }
+.dayhead.today { font-size: 30px; }
+.ev.today { margin-bottom: 19px; }
+.ev.today .bar { height: 30px; }
+.ev.today .time { width: 151px; font-size: 20px; }
+.ev.today .title { font-size: 30px; }
+.noevent.today { font-size: 24px; }
 
 /* ===== 右上：天気 ===== */
 #weather {
-  position: absolute; right: 40px; top: 20px; width: 320px; text-align: right;
+  position: absolute; right: 40px; top: 20px; width: 330px; text-align: right;
   top: max(20px, env(safe-area-inset-top, 20px));
 }
 #wnow { display: flex; align-items: center; justify-content: flex-end; }
 #wnow svg { margin-right: 12px; }
-#wtemp { font-size: 64px; line-height: 1; font-weight: var(--wc); }
-#wtext { font-size: 18px; margin-top: 6px; opacity: 0.85; letter-spacing: 2px; }
-#wdays { width: 300px; margin-left: auto; margin-top: 18px; }
-.wd { display: flex; align-items: center; height: 44px; margin-bottom: 9px; }
-.wd .dn { flex: none; width: 62px; text-align: left; font-size: 18px; opacity: 0.85; }
+#wtemp { font-size: 69px; line-height: 1; font-weight: var(--wc); }
+#wtext { font-size: 19px; margin-top: 6px; opacity: 0.85; letter-spacing: 2px; }
+#wdays { width: 310px; margin-left: auto; margin-top: 18px; }
+.wd { display: flex; align-items: center; height: 47px; margin-bottom: 10px; }
+.wd .dn { flex: none; width: 65px; text-align: left; font-size: 19px; opacity: 0.85; }
 .wd svg { flex: none; display: block; margin: 0 14px; }
-.wd .hi { flex: none; width: 52px; text-align: right; font-size: 24px; font-weight: var(--ws); }
-.wd .lo { flex: none; width: 50px; text-align: right; font-size: 19px; opacity: 0.6; }
+.wd .hi { flex: none; width: 55px; text-align: right; font-size: 26px; font-weight: var(--ws); }
+.wd .lo { flex: none; width: 51px; text-align: right; font-size: 21px; opacity: 0.6; }
 /* 今日の行だけ大きくする */
-.wd.first { height: 58px; }
-.wd.first .dn { width: 70px; font-size: 22px; }
-.wd.first .hi { width: 66px; font-size: 34px; }
-.wd.first .lo { width: 56px; font-size: 26px; }
+.wd.first { height: 63px; }
+.wd.first .dn { width: 73px; font-size: 24px; }
+.wd.first .hi { width: 72px; font-size: 37px; }
+.wd.first .lo { width: 59px; font-size: 28px; }
 #wcredit { font-size: 12px; opacity: 0.5; margin-top: 6px; }
 svg.icon { stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
@@ -180,8 +177,8 @@ svg.icon { stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; str
 /* ===== 縦向きの簡易対応 ===== */
 @media (orientation: portrait) {
   #left { width: 100%; padding-right: 32px; }
-  #clock { font-size: 100px; }
-  #weather { right: 32px; width: 320px; }
+  #clock { font-size: 105px; }
+  #weather { right: 32px; width: 330px; }
   #events { margin-top: 200px; }
 }
 </style>
@@ -193,7 +190,6 @@ svg.icon { stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; str
 
 <div id="left">
   <div id="clock"></div>
-  <div id="date"></div>
   <div id="events"></div>
 </div>
 
@@ -265,6 +261,19 @@ function getParam(name) {
     }
   }
   return '';
+}
+
+// ---------- 画面全体の高さ（ホーム画面から開いたとき下に黒い帯が出ないように） ----------
+// ホーム画面に追加して全画面で開くと、innerHeight がステータスバーの分だけ短くなり、下にすき間ができる。
+// そのため、画面そのものの高さを CSS 変数 --fullh に入れて使う。
+function updateFullHeight() {
+  var h = window.innerHeight;
+  if (window.navigator.standalone === true) {
+    // iOS の screen.width/height は向きに関係なく縦向き基準なので、向きに合わせて選ぶ
+    var landscape = window.innerWidth > window.innerHeight;
+    h = landscape ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
+  }
+  document.documentElement.style.setProperty('--fullh', h + 'px');
 }
 
 // ---------- フォント ----------
@@ -429,7 +438,7 @@ function renderWeather(w) {
     var hi = document.createElement('div'); hi.className = 'hi'; hi.textContent = Math.round(d.max) + '°';
     var lo = document.createElement('div'); lo.className = 'lo'; lo.textContent = Math.round(d.min) + '°';
     col.appendChild(dn);
-    col.appendChild(makeIcon(weatherInfo(d.code, 1).i, i === 0 ? 44 : 32));
+    col.appendChild(makeIcon(weatherInfo(d.code, 1).i, i === 0 ? 47 : 34));
     col.appendChild(hi);
     col.appendChild(lo);
     box.appendChild(col);
@@ -640,7 +649,8 @@ function tick() {
   var c = now.getHours() + ':' + pad2(now.getMinutes());
   if (c !== lastClock) { lastClock = c; $('clock').textContent = c; }
   var d = (now.getMonth() + 1) + '月' + now.getDate() + '日 ' + WEEK[now.getDay()] + '曜日';
-  if (d !== lastDate) { lastDate = d; $('date').textContent = d; }
+  var dateEl = $('date');   // 日付の表示は無くした。要素があるときだけ書く
+  if (dateEl && d !== lastDate) { lastDate = d; dateEl.textContent = d; }
   var mk = ymd(now) + ' ' + c;
   if (mk !== lastMinuteKey) {
     lastMinuteKey = mk;
@@ -882,6 +892,12 @@ function makeDemoWeather() {
 // ============================================================
 function init() {
   state.loadedDate = ymd(new Date());
+  updateFullHeight();
+  window.addEventListener('resize', updateFullHeight);
+  window.addEventListener('orientationchange', function () {
+    updateFullHeight();
+    setTimeout(updateFullHeight, 300);   // 回転直後は値が古いことがあるので、もう一度計算する
+  });
   document.documentElement.className = 'f-noto';
   var fp = FONT_PARAM[getParam('font')];
   if (fp) { state.fontLocked = true; }
