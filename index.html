@@ -24,12 +24,34 @@
   --fam: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
   --wc: 400; --wb: 400; --ws: 600;
 }
+/* 書体セット：数字・英字は欧文書体、かな・漢字は和文書体（並べた順に使われる） */
+.f-modern {
+  --fam: "Josefin Sans", "Zen Kaku Gothic New", "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+  --wc: 200; --wb: 300; --ws: 400;
+}
+.f-elegant {
+  --fam: "Cormorant Garamond", "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --wc: 300; --wb: 400; --ws: 600;
+}
+.f-soft {
+  --fam: "Quicksand", "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif;
+  --wc: 300; --wb: 400; --ws: 500;
+}
+.f-nordic {
+  --fam: "Jost", "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+  --wc: 200; --wb: 300; --ws: 400;
+}
+.f-pen {
+  --fam: "Amatic SC", "Yomogi", "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+  --wc: 700; --wb: 400; --ws: 700;
+}
 html, body {
   margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
   background: #14171c;
   color: #fff;
   font-family: var(--fam);
   font-weight: var(--wb);
+  font-variant-numeric: lining-nums tabular-nums; /* 数字を普通の形・同じ幅にそろえる */
   -webkit-text-size-adjust: 100%;
   -webkit-user-select: none; user-select: none;
   -webkit-touch-callout: none;
@@ -96,22 +118,34 @@ body { position: fixed; left: 0; top: 0; right: 0; bottom: 0; }
   font-size: 22px; font-weight: var(--wb); color: rgba(255, 255, 255, 0.95);
 }
 .noevent { font-size: 18px; color: rgba(255, 255, 255, 0.6); margin-left: 16px; }
+/* 今日の欄だけ大きくする */
+.dayhead.today { font-size: 24px; }
+.ev.today { margin-bottom: 18px; }
+.ev.today .bar { height: 28px; }
+.ev.today .time { width: 140px; font-size: 19px; }
+.ev.today .title { font-size: 28px; }
+.noevent.today { font-size: 22px; }
 
 /* ===== 右上：天気 ===== */
 #weather {
-  position: absolute; right: 40px; top: 20px; width: 280px; text-align: right;
+  position: absolute; right: 40px; top: 20px; width: 320px; text-align: right;
   top: max(20px, env(safe-area-inset-top, 20px));
 }
 #wnow { display: flex; align-items: center; justify-content: flex-end; }
 #wnow svg { margin-right: 12px; }
 #wtemp { font-size: 64px; line-height: 1; font-weight: var(--wc); }
 #wtext { font-size: 18px; margin-top: 6px; opacity: 0.85; letter-spacing: 2px; }
-#wdays { width: 250px; margin-left: auto; margin-top: 18px; }
+#wdays { width: 300px; margin-left: auto; margin-top: 18px; }
 .wd { display: flex; align-items: center; height: 44px; margin-bottom: 9px; }
 .wd .dn { flex: none; width: 62px; text-align: left; font-size: 18px; opacity: 0.85; }
 .wd svg { flex: none; display: block; margin: 0 14px; }
 .wd .hi { flex: none; width: 52px; text-align: right; font-size: 24px; font-weight: var(--ws); }
 .wd .lo { flex: none; width: 50px; text-align: right; font-size: 19px; opacity: 0.6; }
+/* 今日の行だけ大きくする */
+.wd.first { height: 58px; }
+.wd.first .dn { width: 70px; font-size: 22px; }
+.wd.first .hi { width: 66px; font-size: 34px; }
+.wd.first .lo { width: 56px; font-size: 26px; }
 #wcredit { font-size: 12px; opacity: 0.5; margin-top: 6px; }
 svg.icon { stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
@@ -147,7 +181,7 @@ svg.icon { stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; str
 @media (orientation: portrait) {
   #left { width: 100%; padding-right: 32px; }
   #clock { font-size: 100px; }
-  #weather { right: 32px; }
+  #weather { right: 32px; width: 320px; }
   #events { margin-top: 200px; }
 }
 </style>
@@ -186,9 +220,16 @@ var WEEK = ['日', '月', '火', '水', '木', '金', '土'];
 var FONTS = {
   'Noto Sans JP':    { cls: 'f-noto',    q: 'Noto+Sans+JP:wght@200;300;400' },
   'Zen Maru Gothic': { cls: 'f-zen',     q: 'Zen+Maru+Gothic:wght@300;400;500' },
-  'Shippori Mincho': { cls: 'f-shippori', q: 'Shippori+Mincho:wght@400;500;600' }
+  'Shippori Mincho': { cls: 'f-shippori', q: 'Shippori+Mincho:wght@400;500;600' },
+  // 書体セット（欧文書体 + 和文書体を1回でまとめて読み込む）
+  'Modern':  { cls: 'f-modern',  q: 'Josefin+Sans:wght@200;300;400&family=Zen+Kaku+Gothic+New:wght@300;400;500' },
+  'Elegant': { cls: 'f-elegant', q: 'Cormorant+Garamond:wght@300;400;600&family=Shippori+Mincho:wght@400;500;600' },
+  'Soft':    { cls: 'f-soft',    q: 'Quicksand:wght@300;400;500&family=Zen+Maru+Gothic:wght@300;400;500' },
+  'Nordic':  { cls: 'f-nordic',  q: 'Jost:wght@200;300;400&family=Noto+Sans+JP:wght@200;300;400' },
+  'Pen':     { cls: 'f-pen',     q: 'Amatic+SC:wght@400;700&family=Yomogi' }
 };
-var FONT_PARAM = { noto: 'Noto Sans JP', zenmaru: 'Zen Maru Gothic', shippori: 'Shippori Mincho' };
+var FONT_PARAM = { noto: 'Noto Sans JP', zenmaru: 'Zen Maru Gothic', shippori: 'Shippori Mincho',
+  modern: 'Modern', elegant: 'Elegant', soft: 'Soft', nordic: 'Nordic', pen: 'Pen' };
 
 var state = {
   errText: '',         // 通信エラーの小さな表示
@@ -383,12 +424,12 @@ function renderWeather(w) {
   for (var i = 0; i < w.days.length; i++) {
     var d = w.days[i];
     var col = document.createElement('div');
-    col.className = 'wd';
+    col.className = 'wd' + (i === 0 ? ' first' : '');   // 1行目（今日）だけ大きく
     var dn = document.createElement('div'); dn.className = 'dn'; dn.textContent = d.label;
     var hi = document.createElement('div'); hi.className = 'hi'; hi.textContent = Math.round(d.max) + '°';
     var lo = document.createElement('div'); lo.className = 'lo'; lo.textContent = Math.round(d.min) + '°';
     col.appendChild(dn);
-    col.appendChild(makeIcon(weatherInfo(d.code, 1).i, 32));
+    col.appendChild(makeIcon(weatherInfo(d.code, 1).i, i === 0 ? 44 : 32));
     col.appendChild(hi);
     col.appendChild(lo);
     box.appendChild(col);
@@ -558,12 +599,12 @@ function renderEvents() {
     var p = day.date.split('-');
     var wd = new Date(+p[0], +p[1] - 1, +p[2]).getDay();
     var head = document.createElement('div');
-    head.className = 'dayhead' + (wd === 6 ? ' sat' : (wd === 0 ? ' sun' : ''));
+    head.className = 'dayhead' + (isToday ? ' today' : '') + (wd === 6 ? ' sat' : (wd === 0 ? ' sun' : ''));
     head.textContent = dayHeadText(day.date, todayStr, tomorrowStr);
     box.appendChild(head);
     if (evs.length === 0) {
       var none = document.createElement('div');
-      none.className = 'noevent';
+      none.className = 'noevent' + (isToday ? ' today' : '');
       none.textContent = '予定はありません';
       box.appendChild(none);
       continue;
@@ -572,7 +613,7 @@ function renderEvents() {
       var ev = evs[ei];
       var row = document.createElement('div');
       var past = isToday && !ev.allDay && ev.endMs && ev.endMs < nowMs;
-      row.className = 'ev' + (past ? ' past' : '');
+      row.className = 'ev' + (isToday ? ' today' : '') + (past ? ' past' : '');
       var bar = document.createElement('span');
       bar.className = 'bar';
       bar.style.background = /^#[0-9a-fA-F]{3,8}$/.test(ev.color || '') ? ev.color : '#ffffff';
