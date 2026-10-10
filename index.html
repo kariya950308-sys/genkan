@@ -144,6 +144,10 @@ body { position: fixed; left: 0; top: 0; right: 0; height: var(--fullh, 100%); }
 .wd.first .hi { width: 72px; font-size: 37px; }
 .wd.first .lo { width: 59px; font-size: 28px; }
 #wcredit { font-size: 12px; opacity: 0.5; margin-top: 6px; }
+#wnow .emoji { margin-right: 12px; }
+.wd .emoji { flex: none; margin: 0 14px; }
+.emoji { display: inline-block; text-align: center; overflow: hidden; text-shadow: none;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
 svg.icon { stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ===== 右下の小さな表示 ===== */
@@ -376,47 +380,117 @@ var ICON_PARTS = {
   thunder: [['path', { d: CLOUD, transform: 'translate(0 -7)' }],
     ['path', { d: 'M26 31l-6 8h7l-4 7' }]]
 };
-function makeIcon(kind, size) {
+// 天気アイコンの見た目：'line'（白い線）/ 'color'（色付きの線）/ 'flat'（塗りつぶし）/ 'emoji'（絵文字）
+// ?icons=… で上書きできる（なければ Apps Script の設定、それも無ければ 'line'）
+var ICON_STYLES = ['line', 'color', 'flat', 'emoji'];
+function iconStyle() {
+  var q = getParam('icons');
+  if (ICON_STYLES.indexOf(q) >= 0) { return q; }
+  var c = state.data && state.data.config && state.data.config.weatherIcon;
+  if (typeof c === 'string' && ICON_STYLES.indexOf(c) >= 0) { return c; }
+  return 'line';
+}
+var ICON_PALETTE = { sun: '#FFC94D', moon: '#F5E6A8', cloud: '#E8EEF4', rain: '#6EC1FF', snow: '#BFE6FF', thunder: '#FFD84D', fog: '#C9D3DC' };
+// 部品ごとの役割（ICON_PARTS と同じ順番）
+var ICON_ROLES = {
+  sun: ['sun', 'sun'], moon: ['moon'], partly: ['sun', 'sun', 'cloud'], cloud: ['cloud'], fog: ['fog'],
+  rain: ['cloud', 'rain'], snow: ['cloud', 'snow', 'snow', 'snow'], thunder: ['cloud', 'thunder']
+};
+// 塗りつぶし用の雷（閉じた形）
+var FLAT_BOLT = 'M27 28l-9 11h6l-3 8 10-12h-6z';
+
+function makeIcon(kind, size, emoji) {
+  var st = iconStyle();
+  if (st === 'emoji') {
+    var sp = document.createElement('span');
+    sp.className = 'emoji';
+    sp.textContent = emoji || '☁️';
+    sp.style.width = size + 'px';
+    sp.style.height = size + 'px';
+    sp.style.lineHeight = size + 'px';
+    sp.style.fontSize = Math.round(size * 0.82) + 'px';
+    return sp;
+  }
   var svg = document.createElementNS(SVGNS, 'svg');
   svg.setAttribute('viewBox', '0 0 48 48');
   svg.setAttribute('width', size);
   svg.setAttribute('height', size);
-  svg.setAttribute('class', 'icon');
-  var parts = ICON_PARTS[kind] || ICON_PARTS.cloud;
+  if (st === 'line') {
+    svg.setAttribute('class', 'icon');
+  } else {
+    svg.setAttribute('class', 'icon2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+  }
+  var k0 = ICON_PARTS[kind] ? kind : 'cloud';
+  var parts = ICON_PARTS[k0];
+  var roles = ICON_ROLES[k0];
   for (var i = 0; i < parts.length; i++) {
     var el = document.createElementNS(SVGNS, parts[i][0]);
     var attrs = parts[i][1];
     for (var k in attrs) {
       if (Object.prototype.hasOwnProperty.call(attrs, k)) { el.setAttribute(k, attrs[k]); }
     }
+    if (st !== 'line') { paintPart(el, st, roles[i], parts[i][0]); }
     svg.appendChild(el);
   }
   return svg;
 }
 
+// 部品に色を付ける（color: 色付きの線 / flat: 塗りつぶし）
+function paintPart(el, st, role, tag) {
+  var col = ICON_PALETTE[role];
+  if (st === 'color') {
+    el.setAttribute('stroke', col);
+    el.setAttribute('stroke-width', 2);
+    // 小さな点（雪）は線だけだと見えにくいので塗る
+    el.setAttribute('fill', (role === 'snow' && tag === 'circle') ? col : 'none');
+    return;
+  }
+  // flat
+  if (role === 'cloud') {
+    el.setAttribute('fill', '#F4F7FA');
+    el.setAttribute('stroke', '#AEBBC8');          // 写真の上でも見えるように薄い縁
+    el.setAttribute('stroke-width', 1.5);
+  } else if (role === 'sun' && tag === 'circle') {
+    el.setAttribute('fill', col); el.setAttribute('stroke', 'none');
+  } else if (role === 'moon') {
+    el.setAttribute('fill', col); el.setAttribute('stroke', 'none');
+  } else if (role === 'snow') {
+    el.setAttribute('fill', col); el.setAttribute('stroke', 'none');
+    el.setAttribute('r', 2.6);
+  } else if (role === 'thunder') {
+    el.setAttribute('d', FLAT_BOLT);
+    el.setAttribute('fill', col); el.setAttribute('stroke', '#E0A800'); el.setAttribute('stroke-width', 1);
+  } else {
+    // 光線・雨粒・霧は太めの線
+    el.setAttribute('fill', 'none'); el.setAttribute('stroke', col); el.setAttribute('stroke-width', 3);
+  }
+}
+
 // 天気コード（WMO）→ 日本語とアイコン
 function weatherInfo(code, isDay) {
   var day = (isDay !== 0);
-  if (code === 0) { return { t: '快晴', i: day ? 'sun' : 'moon' }; }
-  if (code === 1) { return { t: '晴れ', i: day ? 'sun' : 'moon' }; }
-  if (code === 2) { return { t: '晴れ時々くもり', i: 'partly' }; }
-  if (code === 3) { return { t: 'くもり', i: 'cloud' }; }
-  if (code === 45 || code === 48) { return { t: '霧', i: 'fog' }; }
-  if (code >= 51 && code <= 55) { return { t: '霧雨', i: 'rain' }; }
-  if (code === 56 || code === 57) { return { t: '着氷性の霧雨', i: 'rain' }; }
-  if (code === 61) { return { t: '弱い雨', i: 'rain' }; }
-  if (code === 63) { return { t: '雨', i: 'rain' }; }
-  if (code === 65) { return { t: '強い雨', i: 'rain' }; }
-  if (code === 66 || code === 67) { return { t: '着氷性の雨', i: 'rain' }; }
-  if (code === 71) { return { t: '弱い雪', i: 'snow' }; }
-  if (code === 73) { return { t: '雪', i: 'snow' }; }
-  if (code === 75) { return { t: '強い雪', i: 'snow' }; }
-  if (code === 77) { return { t: '霧雪', i: 'snow' }; }
-  if (code >= 80 && code <= 82) { return { t: 'にわか雨', i: 'rain' }; }
-  if (code === 85 || code === 86) { return { t: 'にわか雪', i: 'snow' }; }
-  if (code === 95) { return { t: '雷雨', i: 'thunder' }; }
-  if (code === 96 || code === 99) { return { t: 'ひょうを伴う雷雨', i: 'thunder' }; }
-  return { t: '', i: 'cloud' };
+  if (code === 0) { return { t: '快晴', i: day ? 'sun' : 'moon', e: day ? '☀️' : '🌙' }; }
+  if (code === 1) { return { t: '晴れ', i: day ? 'sun' : 'moon', e: day ? '☀️' : '🌙' }; }
+  if (code === 2) { return { t: '晴れ時々くもり', i: 'partly', e: '⛅' }; }
+  if (code === 3) { return { t: 'くもり', i: 'cloud', e: '☁️' }; }
+  if (code === 45 || code === 48) { return { t: '霧', i: 'fog', e: '🌫️' }; }
+  if (code >= 51 && code <= 55) { return { t: '霧雨', i: 'rain', e: '🌧️' }; }
+  if (code === 56 || code === 57) { return { t: '着氷性の霧雨', i: 'rain', e: '🌧️' }; }
+  if (code === 61) { return { t: '弱い雨', i: 'rain', e: '🌧️' }; }
+  if (code === 63) { return { t: '雨', i: 'rain', e: '🌧️' }; }
+  if (code === 65) { return { t: '強い雨', i: 'rain', e: '🌧️' }; }
+  if (code === 66 || code === 67) { return { t: '着氷性の雨', i: 'rain', e: '🌧️' }; }
+  if (code === 71) { return { t: '弱い雪', i: 'snow', e: '🌨️' }; }
+  if (code === 73) { return { t: '雪', i: 'snow', e: '🌨️' }; }
+  if (code === 75) { return { t: '強い雪', i: 'snow', e: '🌨️' }; }
+  if (code === 77) { return { t: '霧雪', i: 'snow', e: '🌨️' }; }
+  if (code >= 80 && code <= 82) { return { t: 'にわか雨', i: 'rain', e: '🌦️' }; }
+  if (code === 85 || code === 86) { return { t: 'にわか雪', i: 'snow', e: '🌨️' }; }
+  if (code === 95) { return { t: '雷雨', i: 'thunder', e: '⛈️' }; }
+  if (code === 96 || code === 99) { return { t: 'ひょうを伴う雷雨', i: 'thunder', e: '⛈️' }; }
+  return { t: '', i: 'cloud', e: '☁️' };
 }
 
 // 天気の表示。w = { temp, code, isDay, days:[{label, code, max, min}] }
@@ -425,7 +499,7 @@ function renderWeather(w) {
   var info = weatherInfo(w.code, w.isDay);
   var wi = $('wicon');
   clearNode(wi);
-  wi.appendChild(makeIcon(info.i, 60));
+  wi.appendChild(makeIcon(info.i, 60, info.e));
   $('wtemp').textContent = Math.round(w.temp) + '°';
   $('wtext').textContent = info.t;
   var box = $('wdays');
@@ -438,7 +512,8 @@ function renderWeather(w) {
     var hi = document.createElement('div'); hi.className = 'hi'; hi.textContent = Math.round(d.max) + '°';
     var lo = document.createElement('div'); lo.className = 'lo'; lo.textContent = Math.round(d.min) + '°';
     col.appendChild(dn);
-    col.appendChild(makeIcon(weatherInfo(d.code, 1).i, i === 0 ? 47 : 34));
+    var dinfo = weatherInfo(d.code, 1);
+    col.appendChild(makeIcon(dinfo.i, i === 0 ? 47 : 34, dinfo.e));
     col.appendChild(hi);
     col.appendChild(lo);
     box.appendChild(col);
@@ -581,6 +656,26 @@ function dayHeadText(dateStr, todayStr, tomorrowStr) {
   return base;
 }
 
+// 予定名の色分け：最初に当てはまったルールの色を返す（なければ ''）
+var DEFAULT_TITLE_COLORS = [
+  { words: ['可燃'], color: '#ff6b6b' },
+  { words: ['不燃'], color: '#5aa9ff' },
+  { words: ['ダンボール', '段ボール', 'ペットボトル', 'ビン', 'びん', '資源'], color: '#4cd38a' }
+];
+function titleColorFor(title) {
+  var rules = DEFAULT_TITLE_COLORS;
+  var c = state.data && state.data.config && state.data.config.titleColors;
+  if (c && typeof c.length === 'number') { rules = c; }   // 古いデプロイ（設定なし）のときだけ初期ルール
+  for (var i = 0; i < rules.length; i++) {
+    var r = rules[i];
+    if (!r || !r.words || typeof r.color !== 'string' || !/^#[0-9a-fA-F]{3,8}$/.test(r.color)) { continue; }
+    for (var j = 0; j < r.words.length; j++) {
+      if (typeof r.words[j] === 'string' && r.words[j] !== '' && title.indexOf(r.words[j]) >= 0) { return r.color; }
+    }
+  }
+  return '';
+}
+
 function renderEvents() {
   var box = $('events');
   clearNode(box);
@@ -632,6 +727,8 @@ function renderEvents() {
       var title = document.createElement('span');
       title.className = 'title';
       title.textContent = ev.title || '';
+      var tcol = titleColorFor(String(ev.title || ''));
+      if (tcol) { title.style.color = tcol; }
       row.appendChild(bar);
       row.appendChild(time);
       row.appendChild(title);
@@ -676,6 +773,7 @@ function handleData(j, fromCache) {
     state.weatherCfg = { lat: j.config.latitude, lon: j.config.longitude };
   }
   setPhotoIds(j.photoIds || []);
+  if (state.weather) { renderWeather(state.weather); }   // アイコンの見た目の設定が変わったときのため
   renderEvents();
   updateStatus();
   if (!fromCache) { loadWeatherIfNeeded(); }
@@ -845,14 +943,15 @@ function makeDemoData() {
     days.push({ date: ymd(d), events: [] });
   }
   days[0].events = [
-    ev('燃えるゴミ', C.blue, dayAt(0, 0, 0), dayAt(1, 0, 0), true),
+    ev('可燃ゴミ', C.blue, dayAt(0, 0, 0), dayAt(1, 0, 0), true),
     ev('朝のジョギング', C.green, dayAt(0, 7, 0), dayAt(0, 7, 30)),
     ev('歯医者', C.yellow, dayAt(0, 10, 0), dayAt(0, 11, 0)),
     ev('取引先との打ち合わせ（駅前のカフェで資料の最終確認と今後の進め方）', C.purple, dayAt(0, 15, 0), dayAt(0, 16, 30)),
     ev('家族で夕食', C.red, dayAt(0, 19, 30), dayAt(0, 21, 0))
   ];
   days[1].events = [
-    ev('資源ゴミ', C.blue, dayAt(1, 0, 0), dayAt(2, 0, 0), true),
+    ev('不燃ゴミ', C.blue, dayAt(1, 0, 0), dayAt(2, 0, 0), true),
+    ev('ダンボール、缶、ペットボトル、ビン', C.green, dayAt(1, 0, 0), dayAt(2, 0, 0), true),
     ev('家族でお出かけ', C.red, dayAt(1, 10, 0), dayAt(1, 17, 30)),
     ev('ピアノの練習', C.green, dayAt(1, 19, 0), dayAt(1, 19, 0), false, '19:00')
   ];
