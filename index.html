@@ -43,7 +43,12 @@
 }
 .f-pen {
   --fam: "Amatic SC", "Yomogi", "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
-  --wc: 700; --wb: 400; --ws: 700;
+  --wc: 700; --wb: 700; --ws: 700;
+}
+/* 手書き風（Pen）は文字の輪郭を少し太らせる（日本語の Yomogi には太字がないため） */
+.f-pen #clock, .f-pen .dayhead, .f-pen .time, .f-pen .title, .f-pen .noevent,
+.f-pen #wtemp, .f-pen #wtext, .f-pen .wd .dn, .f-pen .wd .hi, .f-pen .wd .lo {
+  -webkit-text-stroke: 0.02em currentColor;
 }
 html, body {
   margin: 0; padding: 0; width: 100%; height: 100%; height: var(--fullh, 100%); overflow: hidden;
